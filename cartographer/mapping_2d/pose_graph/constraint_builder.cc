@@ -223,6 +223,22 @@ void ConstraintBuilder::ComputeConstraint(
     score_histogram_.Add(score);
   }
 
+  auto matchDelta = initial_pose.inverse() * pose_estimate;
+  double nearBoundaryThresh = options_.fast_correlative_scan_matcher_options().linear_search_window() * 0.975;
+  double absDeltaX = std::abs(matchDelta.translation().x());
+  double absDeltaY = std::abs(matchDelta.translation().y());
+
+  if( absDeltaX >= nearBoundaryThresh || absDeltaY >= nearBoundaryThresh )
+  {
+    std::ostringstream info;
+    info << "Rejecting constraint of Node " << node_id;
+    info << "\n because either delta x: " << absDeltaX;
+    info << "\n             or delta y: " << absDeltaY;
+    info << "\n is beyond boundary threshold of " << nearBoundaryThresh;
+    LOG(INFO) << info.str();
+    return;
+  }
+
   // Use the CSM estimate as both the initial and previous pose. This has the
   // effect that, in the absence of better information, we prefer the original
   // CSM estimate.
