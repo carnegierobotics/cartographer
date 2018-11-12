@@ -34,7 +34,9 @@ float SlowValueToProbability(const uint16 value) {
 }
 
 const std::vector<float>* PrecomputeValueToProbability() {
-  std::vector<float>* result = new std::vector<float>;
+  //std::vector<float>* result = new std::vector<float>;
+  static std::shared_ptr<std::vector<float>> result = std::make_shared<std::vector<float>>();
+
   // Repeat two times, so that both values with and without the update marker
   // can be converted to a probability.
   for (int repeat = 0; repeat != 2; ++repeat) {
@@ -42,7 +44,7 @@ const std::vector<float>* PrecomputeValueToProbability() {
       result->push_back(SlowValueToProbability(value));
     }
   }
-  return result;
+  return result.get();
 }
 
 }  // namespace
