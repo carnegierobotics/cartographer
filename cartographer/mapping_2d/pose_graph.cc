@@ -355,9 +355,9 @@ void PoseGraph::WaitForAllComputations() {
                           num_finished_nodes_at_start) /
                          (num_trajectory_nodes_ - num_finished_nodes_at_start)
                   << "%...";
-    std::cout << "\r\x1b[K" << progress_info.str() << std::flush;
+    LOG(INFO) << progress_info.str();
   }
-  std::cout << "\r\x1b[KOptimizing: Done.     " << std::endl;
+  LOG(INFO) << "Optimizing: Done.";
   constraint_builder_.WhenDone(
       [this,
        &notification](const pose_graph::ConstraintBuilder::Result& result) {
