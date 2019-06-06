@@ -76,10 +76,34 @@ void ConstraintBuilder2D::MaybeAddConstraint(
     const SubmapId& submap_id, const Submap2D* const submap,
     const NodeId& node_id, const TrajectoryNode::Data* const constant_data,
     const transform::Rigid2d& initial_relative_pose) {
-  if (initial_relative_pose.translation().norm() >
-      options_.max_constraint_distance()) {
-    return;
+
+  /////////////////////////////////////////// Surgical implant //////////////////////////////////////
+  // TODO (ajakhotia): Simplify this logic.
+  const auto & mapLimits     = submap->grid()->limits();
+  const auto & cellLimits    = mapLimits.cell_limits();
+  const auto & metersPerCell = mapLimits.resolution();
+
+  const Eigen::Vector3d cellDims(cellLimits.num_y_cells, cellLimits.num_x_cells, 0); // intentionally reversed x and y
+  const Eigen::Vector3d realDims_m = cellDims * metersPerCell;
+  const Eigen::Vector3d minLimit_m = Eigen::Vector3d(mapLimits.max().x(), mapLimits.max().y(), 0) - realDims_m;
+
+  const auto submapsOrigin_probGridCenter_m = (minLimit_m + realDims_m/2.0).eval();
+  const auto submap_submapsOrigin           = submap->local_pose().inverse();
+  const auto submap_probGridCenter_m        = submap_submapsOrigin * submapsOrigin_probGridCenter_m;
+
+  const auto distFromCenter_m = (submap_probGridCenter_m.head(2) - initial_relative_pose.translation()).norm();
+
+  if (distFromCenter_m > options_.max_constraint_distance())
+  {
+      return;
   }
+  /////////////////////////////////////////// End Surgical implant //////////////////////////////////
+  ///////////////////////////////////////////////////////////////////////////////////////////////////
+
+  //if (initial_relative_pose.translation().norm() >
+  //    options_.max_constraint_distance()) {
+  //  return;
+  //}
   if (!sampler_.Pulse()) return;
 
   absl::MutexLock locker(&mutex_);
