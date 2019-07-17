@@ -44,6 +44,7 @@ class ConstraintBuilder2DTest : public ::testing::Test {
             POSE_GRAPH.constraint_builder.sampling_ratio = 1
             POSE_GRAPH.constraint_builder.min_score = 0
             POSE_GRAPH.constraint_builder.global_localization_min_score = 0
+            POSE_GRAPH.constraint_builder.max_constraint_distance = 100
             return POSE_GRAPH.constraint_builder)text");
     constraint_builder_ = absl::make_unique<ConstraintBuilder2D>(
         CreateConstraintBuilderOptions(constraint_builder_parameters.get()),
