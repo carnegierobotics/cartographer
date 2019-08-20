@@ -47,7 +47,7 @@ class Family {
 template <typename MetricType>
 class NullFamily : public Family<MetricType> {
  public:
-  MetricType* Add(const std::map<std::string, std::string>& labels) override {
+  MetricType* Add(const std::map<std::string, std::string>& /*labels*/) override {
     return MetricType::Null();
   }
 };
