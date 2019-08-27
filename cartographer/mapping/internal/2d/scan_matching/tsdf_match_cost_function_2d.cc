@@ -58,7 +58,10 @@ class TSDFMatchCostFunction2D {
           interpolated_grid_.GetCorrespondenceCost(world[0], world[1]) *
           point_weight;
     }
-    if (summed_weight == T(0)) return false;
+    if (summed_weight == T(0))
+    {
+        return true;
+    }
     for (size_t i = 0; i < point_cloud_.size(); ++i) {
       residual[i] /= summed_weight;
     }
