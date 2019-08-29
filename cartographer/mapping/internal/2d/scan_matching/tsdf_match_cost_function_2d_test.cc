@@ -83,7 +83,7 @@ TEST_F(TSDFSpaceCostFunction2DTest, MatchEmptyTSDF) {
   for (int i = 0; i < 1; ++i) jacobians_ptrs[i] = jacobians[i].data();
   bool valid_result = cost_function->Evaluate(
       parameter_blocks.data(), residuals.data(), jacobians_ptrs.data());
-  EXPECT_FALSE(valid_result);
+  EXPECT_TRUE(valid_result);
 }
 
 TEST_F(TSDFSpaceCostFunction2DTest, ExactInitialPose) {
@@ -151,13 +151,13 @@ TEST_F(TSDFSpaceCostFunction2DTest, InvalidInitialPose) {
 
   bool valid_result = cost_function->Evaluate(
       parameter_blocks.data(), residuals.data(), jacobians_ptrs.data());
-  EXPECT_FALSE(valid_result);
+  EXPECT_TRUE(valid_result);
 
   pose_estimate[1] = -0.4;
   parameter_blocks = {{pose_estimate.data()}};
   valid_result = cost_function->Evaluate(
       parameter_blocks.data(), residuals.data(), jacobians_ptrs.data());
-  EXPECT_FALSE(valid_result);
+  EXPECT_TRUE(valid_result);
 }
 
 }  // namespace
