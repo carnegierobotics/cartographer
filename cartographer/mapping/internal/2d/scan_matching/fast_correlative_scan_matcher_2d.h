@@ -96,9 +96,9 @@ class PrecomputationGridStack2D {
  public:
   PrecomputationGridStack2D(
       const Grid2D& grid,
-      const proto::FastCorrelativeScanMatcherOptions2D& options);
+      int branch_and_bound_depth);
 
-  const PrecomputationGrid2D& Get(int index) {
+  const PrecomputationGrid2D& Get(int index) const {
     return precomputation_grids_[index];
   }
 
