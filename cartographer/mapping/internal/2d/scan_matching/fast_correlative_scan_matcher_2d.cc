@@ -211,9 +211,9 @@ bool FastCorrelativeScanMatcher2D::Match(
 bool FastCorrelativeScanMatcher2D::Match(
     const transform::Rigid2d& initial_pose_estimate,
     const sensor::PointCloud& point_cloud,
-    double linear_search_window,
-    double angular_search_window,
-    float min_score,
+    const double linear_search_window,
+    const double angular_search_window,
+    const float min_score,
     float* score,
     transform::Rigid2d* pose_estimate
 ) const
