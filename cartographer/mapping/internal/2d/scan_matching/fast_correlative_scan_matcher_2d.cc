@@ -170,15 +170,15 @@ uint8 PrecomputationGrid2D::ComputeCellValue(const float probability) const {
 
 PrecomputationGridStack2D::PrecomputationGridStack2D(
     const Grid2D& grid,
-    const proto::FastCorrelativeScanMatcherOptions2D& options) {
-  CHECK_GE(options.branch_and_bound_depth(), 1);
-  const int max_width = 1 << (options.branch_and_bound_depth() - 1);
-  precomputation_grids_.reserve(options.branch_and_bound_depth());
+    const int branch_and_bound_depth) {
+  CHECK_GE(branch_and_bound_depth, 1);
+  const int max_width = 1 << (branch_and_bound_depth - 1);
+  precomputation_grids_.reserve(branch_and_bound_depth);
   std::vector<float> reusable_intermediate_grid;
   const CellLimits limits = grid.limits().cell_limits();
   reusable_intermediate_grid.reserve((limits.num_x_cells + max_width - 1) *
                                      limits.num_y_cells);
-  for (int i = 0; i != options.branch_and_bound_depth(); ++i) {
+  for (int i = 0; i != branch_and_bound_depth; ++i) {
     const int width = 1 << i;
     precomputation_grids_.emplace_back(grid, limits, width,
                                        &reusable_intermediate_grid);
@@ -191,7 +191,7 @@ FastCorrelativeScanMatcher2D::FastCorrelativeScanMatcher2D(
     : options_(options),
       limits_(grid.limits()),
       precomputation_grid_stack_(
-          absl::make_unique<PrecomputationGridStack2D>(grid, options)) {}
+          absl::make_unique<PrecomputationGridStack2D>(grid, options.branch_and_bound_depth())) {}
 
 FastCorrelativeScanMatcher2D::~FastCorrelativeScanMatcher2D() {}
 
