@@ -533,6 +533,19 @@ void PoseGraph2D::DrainWorkQueue() {
       });
 }
 
+void PoseGraph2D::ClearWorkQueue() {
+    auto work_queue_size = 0;
+    {
+        absl::MutexLock locker(&work_queue_mutex_);
+        if(work_queue_)
+        {
+            work_queue_size = work_queue_->size();
+            work_queue_->clear();
+        }
+    }
+    LOG(INFO) << "Cleared workqueue, dropped " << work_queue_size << " items without processing.";
+}
+
 void PoseGraph2D::WaitForAllComputations() {
   int num_trajectory_nodes;
   {
