@@ -159,6 +159,11 @@ class PoseGraph2D : public PoseGraph {
 
   static void RegisterMetrics(metrics::FamilyFactory* family_factory);
 
+  // Remove all pending tasks in the work queue without processing them
+  // mostly used during destruction to avoid waiting.
+  void ClearWorkQueue() LOCKS_EXCLUDED(mutex_)
+      LOCKS_EXCLUDED(work_queue_mutex_);
+
  private:
   MapById<SubmapId, PoseGraphInterface::SubmapData> GetSubmapDataUnderLock()
       const EXCLUSIVE_LOCKS_REQUIRED(mutex_);
