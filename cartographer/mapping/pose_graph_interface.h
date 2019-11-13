@@ -35,9 +35,26 @@ class PoseGraphInterface {
   // 2010 IEEE/RSJ International Conference on (pp. 22--29). IEEE, 2010.
   struct Constraint {
     struct Pose {
+      Pose(const transform::Rigid3d & zbar_ij_arg,
+           double translation_weight_arg,
+           double rotation_weight_arg)
+        : zbar_ij(zbar_ij_arg),
+          translation_weight(translation_weight_arg),
+          rotation_weight(rotation_weight_arg) {};
+
+      Pose(const transform::Rigid3d & zbar_ij_arg,
+           double translation_weight_arg,
+           double rotation_weight_arg,
+           const Eigen::Matrix3d & precision_arg)
+        : zbar_ij(zbar_ij_arg),
+          translation_weight(translation_weight_arg),
+          rotation_weight(rotation_weight_arg),
+          precision(precision_arg) {};
+
       transform::Rigid3d zbar_ij;
       double translation_weight;
       double rotation_weight;
+      Eigen::Matrix3d precision = Eigen::Matrix3d::Identity(); /// FIXME: is this the right size?
     };
 
     SubmapId submap_id;  // 'i' in the paper.

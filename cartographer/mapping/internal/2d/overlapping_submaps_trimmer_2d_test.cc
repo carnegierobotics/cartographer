@@ -86,7 +86,7 @@ class OverlappingSubmapsTrimmer2DTest : public ::testing::Test {
     fake_pose_graph_.mutable_constraints()->push_back(
         {SubmapId{0 /* trajectory_id */, submap_index},
          NodeId{0 /* trajectory_id */, node_index},
-         {} /* pose */,
+         {{},{},{}} /* pose */,
          is_intra_submap ? PoseGraphInterface::Constraint::INTRA_SUBMAP
                          : PoseGraphInterface::Constraint::INTER_SUBMAP});
   }
