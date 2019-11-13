@@ -258,20 +258,30 @@ void ConstraintBuilder2D::ComputeConstraint(
   // Use the CSM estimate as both the initial and previous pose. This has the
   // effect that, in the absence of better information, we prefer the original
   // CSM estimate.
+
   ceres::Solver::Summary unused_summary;
+  Eigen::Matrix3d seedless_covariance;
   ceres_scan_matcher_.Match(pose_estimate.translation(), pose_estimate,
                             constant_data->filtered_gravity_aligned_point_cloud,
                             *submap_scan_matcher.grid, &pose_estimate,
-                            &unused_summary);
+                            &unused_summary, &seedless_covariance);
 
   const transform::Rigid2d constraint_transform =
       ComputeSubmapPose(*submap).inverse() * pose_estimate;
+
+  auto seedless_precision = Eigen::Matrix3d(seedless_covariance.inverse().eval());
+  auto scaled_seedless_precision = Eigen::Matrix3d((seedless_precision * 0.0005).eval()); // FIXME: has fudge factor
+  scaled_seedless_precision.row(2) = Eigen::Vector3d{0,0,1}; // FIXME not sure what to do with theta parts
+  scaled_seedless_precision.col(2) = Eigen::Vector3d{0,0,1}; // FIXME not sure what to do with theta parts
+
   constraint->reset(new Constraint{submap_id,
                                    node_id,
                                    {transform::Embed3D(constraint_transform),
                                     options_.loop_closure_translation_weight(),
-                                    options_.loop_closure_rotation_weight()},
+                                    options_.loop_closure_rotation_weight(),
+                                    scaled_seedless_precision},
                                    Constraint::INTER_SUBMAP});
+
 
   if (options_.log_matches()) {
     std::ostringstream info;
