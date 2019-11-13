@@ -37,15 +37,32 @@ class SpaCostFunction2D {
       const PoseGraphInterface::Constraint::Pose& observed_relative_pose)
       : observed_relative_pose_(observed_relative_pose) {}
 
+  template <typename T> static Eigen::Matrix<T, 3, 3> ConvertCovariance(const Eigen::Matrix3d & covariance)
+  {
+      auto returnValue = Eigen::Matrix<T, 3, 3>{};
+      returnValue <<
+         T{covariance(0,0)}, T{covariance(0,1)}, T{covariance(0,2)},
+         T{covariance(1,0)}, T{covariance(1,1)}, T{covariance(1,2)},
+         T{covariance(2,0)}, T{covariance(2,1)}, T{covariance(2,2)};
+      return returnValue;
+  }
+
   template <typename T>
-  bool operator()(const T* const start_pose, const T* const end_pose,
-                  T* e) const {
-    const std::array<T, 3> error =
-        ScaleError(ComputeUnscaledError(
-                       transform::Project2D(observed_relative_pose_.zbar_ij),
-                       start_pose, end_pose),
+  bool operator()(const T* const start_pose, const T* const end_pose, T* e) const {
+    auto raw_error = ComputeUnscaledError(
+        transform::Project2D(observed_relative_pose_.zbar_ij), start_pose, end_pose);
+
+    auto precision = ConvertCovariance<T>(observed_relative_pose_.precision);
+
+    using ErrorMatrixMap = Eigen::Map<Eigen::Matrix<T, 3, 1>>;
+    std::array<T, 3> transformed_error;
+    ErrorMatrixMap(transformed_error.data()) = precision * ErrorMatrixMap(raw_error.data());
+
+    auto error =
+        ScaleError(transformed_error,
                    observed_relative_pose_.translation_weight,
                    observed_relative_pose_.rotation_weight);
+
     std::copy(std::begin(error), std::end(error), e);
     return true;
   }
@@ -53,6 +70,11 @@ class SpaCostFunction2D {
  private:
   const PoseGraphInterface::Constraint::Pose observed_relative_pose_;
 };
+
+template <> Eigen::Matrix<double, 3, 3> SpaCostFunction2D::ConvertCovariance<double>(const Eigen::Matrix3d & covariance)
+{
+    return covariance;
+}
 
 class AnalyticalSpaCostFunction2D
     : public ceres::SizedCostFunction<3 /* number of residuals */,
