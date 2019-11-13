@@ -29,6 +29,18 @@ message NodeId {
   int32 node_index = 2;  // Node index in the given trajectory.
 }
 
+message Matrix3d { // col major order
+  double r0_c0 = 1;
+  double r1_c0 = 2;
+  double r2_c0 = 3;
+  double r0_c1 = 4;
+  double r1_c1 = 5;
+  double r2_c1 = 6;
+  double r0_c2 = 7;
+  double r1_c2 = 8;
+  double r2_c2 = 9;
+}
+
 message PoseGraph {
   message Constraint {
     // Differentiates between intra-submap (where the range data was inserted
@@ -48,6 +60,9 @@ message PoseGraph {
     double translation_weight = 6;
     // Weight of the rotational part of the constraint.
     double rotation_weight = 7;
+    // precision with which the relative_pose is known we will assume identity if not set
+    oneof maybe_precision { Matrix3d precision = 8; };
+
     Tag tag = 5;
   }
 
