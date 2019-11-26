@@ -269,19 +269,20 @@ void ConstraintBuilder2D::ComputeConstraint(
   const transform::Rigid2d constraint_transform =
       ComputeSubmapPose(*submap).inverse() * pose_estimate;
 
-  auto seedless_precision = Eigen::Matrix3d(seedless_covariance.inverse().eval());
-  auto scaled_seedless_precision = Eigen::Matrix3d((seedless_precision * 0.0005).eval()); // FIXME: has fudge factor
-  scaled_seedless_precision.row(2) = Eigen::Vector3d{0,0,1}; // FIXME not sure what to do with theta parts
-  scaled_seedless_precision.col(2) = Eigen::Vector3d{0,0,1}; // FIXME not sure what to do with theta parts
+  auto seedless_precision = options_.use_precision_matrix()
+      ? Eigen::Matrix3d(seedless_covariance.inverse().eval())
+      : Eigen::Matrix3d::Identity();
+
+  auto seedless_precision_chol_up = Eigen::Matrix3d(seedless_precision.llt().matrixU());
+  seedless_precision_chol_up = seedless_precision_chol_up * Eigen::Vector3d(0.02, 0.02, 0.01).asDiagonal(); // FIXME fudge factor
 
   constraint->reset(new Constraint{submap_id,
                                    node_id,
                                    {transform::Embed3D(constraint_transform),
                                     options_.loop_closure_translation_weight(),
                                     options_.loop_closure_rotation_weight(),
-                                    scaled_seedless_precision},
+                                    seedless_precision_chol_up},
                                    Constraint::INTER_SUBMAP});
-
 
   if (options_.log_matches()) {
     std::ostringstream info;
@@ -298,6 +299,7 @@ void ConstraintBuilder2D::ComputeConstraint(
            << std::setprecision(3) << std::abs(difference.normalized_angle());
     }
     info << " with score " << std::setprecision(1) << 100. * score << "%.";
+    info << "\nPrecision was: \n" << seedless_precision;
     LOG(INFO) << info.str();
   }
 }
