@@ -260,21 +260,24 @@ void ConstraintBuilder2D::ComputeConstraint(
   // CSM estimate.
 
   ceres::Solver::Summary unused_summary;
-  Eigen::Matrix3d seedless_covariance;
+  Eigen::Matrix3d seedless_precision;
   ceres_scan_matcher_.Match(pose_estimate.translation(), pose_estimate,
                             constant_data->filtered_gravity_aligned_point_cloud,
                             *submap_scan_matcher.grid, &pose_estimate,
-                            &unused_summary, &seedless_covariance);
+                            &unused_summary, &seedless_precision);
 
   const transform::Rigid2d constraint_transform =
       ComputeSubmapPose(*submap).inverse() * pose_estimate;
 
-  auto seedless_precision = options_.use_precision_matrix()
-      ? Eigen::Matrix3d(seedless_covariance.inverse().eval())
-      : Eigen::Matrix3d::Identity();
+  auto seedless_precision_chol_up = [&](){
+      if (not options_.use_precision_matrix())
+          return Eigen::Matrix3d::Identity().eval();
 
-  auto seedless_precision_chol_up = Eigen::Matrix3d(seedless_precision.llt().matrixU());
-  seedless_precision_chol_up = seedless_precision_chol_up * Eigen::Vector3d(0.02, 0.02, 0.01).asDiagonal(); // FIXME fudge factor
+      return Eigen::Matrix3d(
+          Eigen::Matrix3d(seedless_precision.llt().matrixU()) // Choleskey
+          * Eigen::Vector3d(0.02, 0.02, 0.01).asDiagonal()    // FIXME fudge factor to match normal constraint SPA error
+      );
+  }();
 
   constraint->reset(new Constraint{submap_id,
                                    node_id,

@@ -66,7 +66,7 @@ void CeresScanMatcher2D::Match(const Eigen::Vector2d& target_translation,
                                const Grid2D& grid,
                                transform::Rigid2d* const pose_estimate,
                                ceres::Solver::Summary* summary,
-                               Eigen::Matrix3d * seedless_covariance) const {
+                               Eigen::Matrix3d * seedless_precision) const {
   double ceres_pose_estimate[3] = {initial_pose_estimate.translation().x(),
                                    initial_pose_estimate.translation().y(),
                                    initial_pose_estimate.rotation().angle()};
@@ -100,7 +100,7 @@ void CeresScanMatcher2D::Match(const Eigen::Vector2d& target_translation,
 
   ceres::Solve(ceres_solver_options_, &problem, summary);
 
-  if(seedless_covariance)
+  if(seedless_precision)
   {
       auto parameter_blocks   = std::array<const double*, 1>{{ceres_pose_estimate}};
       auto residuals          = std::vector<double>(point_cloud.size(), 0.0);
@@ -109,8 +109,7 @@ void CeresScanMatcher2D::Match(const Eigen::Vector2d& target_translation,
 
       costFunction->Evaluate(parameter_blocks.data(), residuals.data(), &jacobianPtr);
 
-      /// FIXME there might be a more efficient inverse for covariance matrices
-      *seedless_covariance = (row_major_jacobian.transpose() * row_major_jacobian).inverse();
+      *seedless_precision = (row_major_jacobian.transpose() * row_major_jacobian);
   }
 
   *pose_estimate = transform::Rigid2d(
