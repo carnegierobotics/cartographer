@@ -49,12 +49,14 @@ class PoseGraphInterface {
         : zbar_ij(zbar_ij_arg),
           translation_weight(translation_weight_arg),
           rotation_weight(rotation_weight_arg),
-          precision(precision_arg) {};
+          weight_matrix(precision_arg) {};
+
+      Pose(const Pose & pose) = default;
 
       transform::Rigid3d zbar_ij;
-      double translation_weight;
-      double rotation_weight;
-      Eigen::Matrix3d precision = Eigen::Matrix3d::Identity(); /// FIXME: is this the right size?
+      double             translation_weight; /// FIXME replace with weight matrix?
+      double             rotation_weight;    /// FIXME replace with weight matrix?
+      Eigen::Matrix3d    weight_matrix = Eigen::Matrix3d::Identity(); /// FIXME: is this the right size?
     };
 
     SubmapId submap_id;  // 'i' in the paper.

@@ -160,8 +160,8 @@ proto::PoseGraph::Constraint ToProto(const PoseGraph::Constraint& constraint) {
       transform::ToProto(constraint.pose.zbar_ij);
   constraint_proto.set_translation_weight(constraint.pose.translation_weight);
   constraint_proto.set_rotation_weight(constraint.pose.rotation_weight);
-  if(not constraint.pose.precision.isIdentity())
-      *constraint_proto.mutable_precision() = ToProto(constraint.pose.precision);
+  if(not constraint.pose.weight_matrix.isIdentity())
+      *constraint_proto.mutable_precision() = ToProto(constraint.pose.weight_matrix);
   constraint_proto.mutable_submap_id()->set_trajectory_id(
       constraint.submap_id.trajectory_id);
   constraint_proto.mutable_submap_id()->set_submap_index(

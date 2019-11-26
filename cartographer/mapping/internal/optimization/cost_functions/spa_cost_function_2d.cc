@@ -52,11 +52,11 @@ class SpaCostFunction2D {
     auto raw_error = ComputeUnscaledError(
         transform::Project2D(observed_relative_pose_.zbar_ij), start_pose, end_pose);
 
-    auto precision = ConvertCovariance<T>(observed_relative_pose_.precision);
+    auto error_weight_mat = ConvertCovariance<T>(observed_relative_pose_.weight_matrix);
 
     using ErrorMatrixMap = Eigen::Map<Eigen::Matrix<T, 3, 1>>;
-    std::array<T, 3> transformed_error;
-    ErrorMatrixMap(transformed_error.data()) = precision * ErrorMatrixMap(raw_error.data());
+    auto transformed_error = std::array<T, 3>{};
+    ErrorMatrixMap(transformed_error.data()) = error_weight_mat * ErrorMatrixMap(raw_error.data());
 
     auto error =
         ScaleError(transformed_error,
