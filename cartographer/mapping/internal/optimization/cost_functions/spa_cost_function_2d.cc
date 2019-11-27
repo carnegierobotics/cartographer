@@ -37,13 +37,13 @@ class SpaCostFunction2D {
       const PoseGraphInterface::Constraint::Pose& observed_relative_pose)
       : observed_relative_pose_(observed_relative_pose) {}
 
-  template <typename T> static Eigen::Matrix<T, 3, 3> ConvertCovariance(const Eigen::Matrix3d & covariance)
+  template <typename T> static Eigen::Matrix<T, 3, 3> Convert3x3(const Eigen::Matrix3d & mat)
   {
       auto returnValue = Eigen::Matrix<T, 3, 3>{};
       returnValue <<
-         T{covariance(0,0)}, T{covariance(0,1)}, T{covariance(0,2)},
-         T{covariance(1,0)}, T{covariance(1,1)}, T{covariance(1,2)},
-         T{covariance(2,0)}, T{covariance(2,1)}, T{covariance(2,2)};
+         T{mat(0,0)}, T{mat(0,1)}, T{mat(0,2)},
+         T{mat(1,0)}, T{mat(1,1)}, T{mat(1,2)},
+         T{mat(2,0)}, T{mat(2,1)}, T{mat(2,2)};
       return returnValue;
   }
 
@@ -52,7 +52,7 @@ class SpaCostFunction2D {
     auto raw_error = ComputeUnscaledError(
         transform::Project2D(observed_relative_pose_.zbar_ij), start_pose, end_pose);
 
-    auto error_weight_mat = ConvertCovariance<T>(observed_relative_pose_.weight_matrix);
+    auto error_weight_mat = Convert3x3<T>(observed_relative_pose_.weight_matrix);
 
     using ErrorMatrixMap = Eigen::Map<Eigen::Matrix<T, 3, 1>>;
     auto transformed_error = std::array<T, 3>{};
@@ -71,9 +71,9 @@ class SpaCostFunction2D {
   const PoseGraphInterface::Constraint::Pose observed_relative_pose_;
 };
 
-template <> Eigen::Matrix<double, 3, 3> SpaCostFunction2D::ConvertCovariance<double>(const Eigen::Matrix3d & covariance)
+template <> Eigen::Matrix<double, 3, 3> SpaCostFunction2D::Convert3x3<double>(const Eigen::Matrix3d & mat)
 {
-    return covariance;
+    return mat;
 }
 
 class AnalyticalSpaCostFunction2D
