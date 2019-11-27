@@ -97,11 +97,11 @@ std::vector<PoseGraph::Constraint> FromProto(
         auto translation_weight = constraint_proto.translation_weight();
         auto rotation_weight = constraint_proto.rotation_weight();
 
-        if(constraint_proto.has_precision())
+        if(constraint_proto.has_weight_matrix())
             return { relative_pose, translation_weight, rotation_weight};
 
-        auto precision = FromProto(constraint_proto.precision());
-        return { relative_pose, translation_weight, rotation_weight, precision };
+        auto weight_matrix = FromProto(constraint_proto.weight_matrix());
+        return { relative_pose, translation_weight, rotation_weight, weight_matrix };
     }();
     const PoseGraph::Constraint::Tag tag = FromProto(constraint_proto.tag());
     constraints.push_back(PoseGraph::Constraint{submap_id, node_id, pose, tag});
@@ -161,7 +161,7 @@ proto::PoseGraph::Constraint ToProto(const PoseGraph::Constraint& constraint) {
   constraint_proto.set_translation_weight(constraint.pose.translation_weight);
   constraint_proto.set_rotation_weight(constraint.pose.rotation_weight);
   if(not constraint.pose.weight_matrix.isIdentity())
-      *constraint_proto.mutable_precision() = ToProto(constraint.pose.weight_matrix);
+      *constraint_proto.mutable_weight_matrix() = ToProto(constraint.pose.weight_matrix);
   constraint_proto.mutable_submap_id()->set_trajectory_id(
       constraint.submap_id.trajectory_id);
   constraint_proto.mutable_submap_id()->set_submap_index(

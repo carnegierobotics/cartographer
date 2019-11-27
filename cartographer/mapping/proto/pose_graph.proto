@@ -61,7 +61,7 @@ message PoseGraph {
     // Weight of the rotational part of the constraint.
     double rotation_weight = 7;
     // precision with which the relative_pose is known we will assume identity if not set
-    oneof maybe_precision { Matrix3d precision = 8; };
+    oneof maybe_weight_matrix { Matrix3d weight_matrix = 8; };
 
     Tag tag = 5;
   }
