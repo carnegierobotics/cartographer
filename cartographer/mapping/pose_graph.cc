@@ -98,10 +98,12 @@ std::vector<PoseGraph::Constraint> FromProto(
         auto rotation_weight = constraint_proto.rotation_weight();
 
         if(constraint_proto.has_weight_matrix())
-            return { relative_pose, translation_weight, rotation_weight};
+        {
+            auto weight_matrix = FromProto(constraint_proto.weight_matrix());
+            return { relative_pose, translation_weight, rotation_weight, weight_matrix };
+        }
 
-        auto weight_matrix = FromProto(constraint_proto.weight_matrix());
-        return { relative_pose, translation_weight, rotation_weight, weight_matrix };
+        return { relative_pose, translation_weight, rotation_weight};
     }();
     const PoseGraph::Constraint::Tag tag = FromProto(constraint_proto.tag());
     constraints.push_back(PoseGraph::Constraint{submap_id, node_id, pose, tag});
