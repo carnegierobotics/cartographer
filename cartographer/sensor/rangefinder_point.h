@@ -18,6 +18,7 @@
 #define CARTOGRAPHER_SENSOR_RANGEFINDER_POINT_H_
 
 #include <vector>
+#include <absl/types/optional.h>
 
 #include "Eigen/Core"
 #include "cartographer/sensor/proto/sensor.pb.h"
@@ -30,6 +31,7 @@ namespace sensor {
 // Stores 3D position of a point observed by a rangefinder sensor.
 struct RangefinderPoint {
   Eigen::Vector3f position;
+  absl::optional<Eigen::Matrix3f> covariance;
 };
 
 // Stores 3D position of a point with its relative measurement time.
@@ -44,6 +46,13 @@ inline RangefinderPoint operator*(const transform::Rigid3<T>& lhs,
                                   const RangefinderPoint& rhs) {
   RangefinderPoint result = rhs;
   result.position = lhs * rhs.position;
+
+  if(rhs.covariance)
+  {
+      const auto& rotation = lhs.rotation();
+      result.covariance = rotation * (*rhs.covariance) * rotation.inverse();
+  }
+
   return result;
 }
 
@@ -67,7 +76,7 @@ inline bool operator==(const TimedRangefinderPoint& lhs,
 
 inline RangefinderPoint FromProto(
     const proto::RangefinderPoint& rangefinder_point_proto) {
-  return {transform::ToEigen(rangefinder_point_proto.position())};
+  return {transform::ToEigen(rangefinder_point_proto.position()), {}};
 }
 
 inline proto::RangefinderPoint ToProto(
@@ -94,7 +103,7 @@ inline proto::TimedRangefinderPoint ToProto(
 
 inline RangefinderPoint ToRangefinderPoint(
     const TimedRangefinderPoint& timed_rangefinder_point) {
-  return {timed_rangefinder_point.position};
+  return {timed_rangefinder_point.position, {}};
 }
 
 inline TimedRangefinderPoint ToTimedRangefinderPoint(
