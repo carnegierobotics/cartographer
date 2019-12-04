@@ -605,8 +605,12 @@ void PoseGraph2D::WaitForAllComputations() {
                                   absl::FromChrono(common::FromSeconds(1.)))) {
     report_progress();
   }
-  CHECK_EQ(constraint_builder_.GetNumFinishedNodes(), num_trajectory_nodes);
-  std::cout << "\r\x1b[KOptimizing: Done.     " << std::endl;
+  std::ostringstream finish_msg;
+  if(constraint_builder_.GetNumFinishedNodes() != num_trajectory_nodes) {
+      finish_msg << "(Finished with " << num_trajectory_nodes - constraint_builder_.GetNumFinishedNodes()
+                 << " fewer nodes than exist. Someone work queue cleared with unfinshed tasks).";
+  }
+  std::cout << "\r\x1b[KOptimizing: Done.     " << finish_msg.str() << std::endl;
 }
 
 void PoseGraph2D::DeleteTrajectory(const int trajectory_id) {
