@@ -19,6 +19,8 @@
 #include "cartographer/mapping/internal/2d/scan_matching/interpolated_tsdf_2d.h"
 #include "cartographer/sensor/point_cloud.h"
 #include "ceres/ceres.h"
+#include <iostream>
+#include <fstream>
 
 namespace cartographer {
 namespace mapping {
@@ -53,18 +55,17 @@ class TSDFMatchCostFunction2D {
       const Eigen::Matrix<T, 3, 1> world = transform * point;
       const T point_weight = interpolated_grid_.GetWeight(world[0], world[1]);
       summed_weight += point_weight;
-      residual[i] =
-          T(point_cloud_.size()) * residual_scaling_factor_ *
-          interpolated_grid_.GetCorrespondenceCost(world[0], world[1]) *
-          point_weight;
+      residual[i] =   T(point_cloud_.size()) * residual_scaling_factor_ *  interpolated_grid_.GetCorrespondenceCost(world[0], world[1])  ; //No point weight
+         // T(point_cloud_.size()) * residual_scaling_factor_ * interpolated_grid_.GetCorrespondenceCost(world[0], world[1]) ;
+          // point_weight;
     }
     if (summed_weight == T(0))
     {
         return true;
     }
-    for (size_t i = 0; i < point_cloud_.size(); ++i) {
-      residual[i] /= summed_weight;
-    }
+//    for (size_t i = 0; i < point_cloud_.size(); ++i) { //remove this when removing point weight
+//      residual[i] /= summed_weight;
+//    }
     return true;
   }
 
