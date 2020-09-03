@@ -19,8 +19,6 @@
 #include "cartographer/mapping/internal/2d/scan_matching/interpolated_tsdf_2d.h"
 #include "cartographer/sensor/point_cloud.h"
 #include "ceres/ceres.h"
-#include <iostream>
-#include <fstream>
 
 namespace cartographer {
 namespace mapping {
