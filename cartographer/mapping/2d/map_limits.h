@@ -75,6 +75,17 @@ class MapLimits {
         common::RoundToInt((max_.x() - point.x()) / resolution_ - 0.5));
   }
 
+  // Returns the "point" given the index of the cell
+  // inverse of GetCellIndex
+  Eigen::Vector2f GetPointFromCellIndex(const Eigen::Array2i& cellIndex) const {
+    // Index values are row major and the top left has Eigen::Array2i::Zero()
+    // and contains (centered_max_x, centered_max_y). We need to flip and
+    // rotate.
+    return Eigen::Vector2f(
+        max_.y() - resolution_ * ((float)cellIndex.x() + 0.5),
+        max_.x() - resolution_ * ((float)cellIndex.y() + 0.5));
+  }
+
   // Returns the center of the cell at 'cell_index'.
   Eigen::Vector2f GetCellCenter(const Eigen::Array2i cell_index) const {
     return {max_.x() - resolution() * (cell_index[1] + 0.5),
