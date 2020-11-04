@@ -31,7 +31,35 @@ namespace sensor {
 // Stores 3D position of a point observed by a rangefinder sensor.
 struct RangefinderPoint {
   Eigen::Vector3f position;
-  absl::optional<Eigen::Matrix3f> covariance;
+  std::unique_ptr<Eigen::Matrix3f> covariance;
+
+  RangefinderPoint(Eigen::Vector3f p, std::unique_ptr<Eigen::Matrix3f> c = nullptr)
+    : position(std::move(p))
+    , covariance(std::move(c))
+  {}
+
+  RangefinderPoint(const RangefinderPoint & rhs)
+    : position(rhs.position)
+    , covariance(
+        rhs.covariance
+          ? std::make_unique<Eigen::Matrix3f>(*rhs.covariance)
+          : nullptr
+      )
+  {}
+  RangefinderPoint(RangefinderPoint && rhs) = default;
+  ~RangefinderPoint() = default;
+
+  RangefinderPoint & operator=(RangefinderPoint && rhs) = default;
+  RangefinderPoint & operator=(const RangefinderPoint & rhs)
+  {
+    position   = rhs.position;
+    covariance =
+      rhs.covariance
+        ? std::make_unique<Eigen::Matrix3f>(*rhs.covariance)
+        : nullptr;
+
+    return *this;
+  }
 };
 
 // Stores 3D position of a point with its relative measurement time.
@@ -49,8 +77,10 @@ inline RangefinderPoint operator*(const transform::Rigid3<T>& lhs,
 
   if(rhs.covariance)
   {
-      const auto& rotation = lhs.rotation();
-      result.covariance = rotation * (*rhs.covariance) * rotation.inverse();
+    const auto& rotation = lhs.rotation();
+    result.covariance = std::make_unique<Eigen::Matrix3f>(
+      rotation * (*rhs.covariance) * rotation.inverse()
+    );
   }
 
   return result;
@@ -66,7 +96,12 @@ inline TimedRangefinderPoint operator*(const transform::Rigid3<T>& lhs,
 
 inline bool operator==(const RangefinderPoint& lhs,
                        const RangefinderPoint& rhs) {
-  return lhs.position == rhs.position;
+  return lhs.position == rhs.position
+    && (   (not lhs.covariance && not rhs.covariance)
+        || (    (lhs.covariance && rhs.covariance)
+            && (*lhs.covariance == *rhs.covariance)
+           )
+       );
 }
 
 inline bool operator==(const TimedRangefinderPoint& lhs,
