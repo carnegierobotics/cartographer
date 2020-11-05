@@ -48,7 +48,7 @@ MATCHER_P(ApproximatelyEquals, expected,
 // Helper function to test the mapping of a single point. Includes test for
 // recompressing the same point again.
 void TestPoint(const Eigen::Vector3f& p) {
-  CompressedPointCloud compressed({{p}});
+  CompressedPointCloud compressed({{p}, {}});
   EXPECT_EQ(1, compressed.size());
   EXPECT_THAT(*compressed.begin(), ApproximatelyEquals(p));
   CompressedPointCloud recompressed({*compressed.begin()});
