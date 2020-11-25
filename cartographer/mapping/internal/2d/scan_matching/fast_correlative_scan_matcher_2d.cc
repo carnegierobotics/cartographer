@@ -160,6 +160,25 @@ PrecomputationGrid2D::PrecomputationGrid2D(
   }
 }
 
+PrecomputationGrid2D::PrecomputationGrid2D(const proto::PrecomputationGrid2D & proto)
+    : offset_(proto.offset().x(), proto.offset().y()),
+      wide_limits_(proto.wide_limits()),
+      min_score_(proto.min_score()),
+      max_score_(proto.max_score()),
+      cells_(proto.cells().begin(), proto.cells().end()) {
+}
+
+proto::PrecomputationGrid2D PrecomputationGrid2D::ToProto() const {
+  auto proto = proto::PrecomputationGrid2D{};
+  proto.mutable_offset()->set_x(offset_.x());
+  proto.mutable_offset()->set_y(offset_.y());
+  *proto.mutable_wide_limits() = mapping::ToProto(wide_limits_);
+  proto.set_min_score(min_score_);
+  proto.set_max_score(max_score_);
+  *proto.mutable_cells() = std::string(cells_.begin(), cells_.end());
+  return proto;
+}
+
 uint8 PrecomputationGrid2D::ComputeCellValue(const float probability) const {
   const int cell_value = common::RoundToInt(
       (probability - min_score_) * (255.f / (max_score_ - min_score_)));
@@ -185,6 +204,21 @@ PrecomputationGridStack2D::PrecomputationGridStack2D(
   }
 }
 
+PrecomputationGridStack2D::PrecomputationGridStack2D(
+    const proto::PrecomputationGridStack2D & proto)
+    : precomputation_grids_(
+          proto.precomputation_grids().begin(),
+          proto.precomputation_grids().end()) {
+}
+
+proto::PrecomputationGridStack2D PrecomputationGridStack2D::ToProto() const {
+  auto proto = proto::PrecomputationGridStack2D{};
+  for (auto const & grid: precomputation_grids_) {
+    *proto.mutable_precomputation_grids()->Add() = grid.ToProto();
+  }
+  return proto;
+}
+
 FastCorrelativeScanMatcher2D::FastCorrelativeScanMatcher2D(
     const Grid2D& grid,
     const proto::FastCorrelativeScanMatcherOptions2D& options)
@@ -193,7 +227,24 @@ FastCorrelativeScanMatcher2D::FastCorrelativeScanMatcher2D(
       precomputation_grid_stack_(
           absl::make_unique<PrecomputationGridStack2D>(grid, options.branch_and_bound_depth())) {}
 
+FastCorrelativeScanMatcher2D::FastCorrelativeScanMatcher2D(
+    const proto::FastCorrelativeScanMatcher2D & proto)
+    : options_(proto.options()),
+    limits_(proto.limits()),
+    precomputation_grid_stack_(
+          absl::make_unique<PrecomputationGridStack2D>(
+              proto.precomputation_grids())) {
+}
+
 FastCorrelativeScanMatcher2D::~FastCorrelativeScanMatcher2D() {}
+
+proto::FastCorrelativeScanMatcher2D FastCorrelativeScanMatcher2D::ToProto() const {
+  auto proto = proto::FastCorrelativeScanMatcher2D{};
+  *proto.mutable_options() = options_;
+  *proto.mutable_limits() = mapping::ToProto(limits_);
+  *proto.mutable_precomputation_grids() = precomputation_grid_stack_->ToProto();
+  return proto;
+}
 
 bool FastCorrelativeScanMatcher2D::Match(
     const transform::Rigid2d& initial_pose_estimate,
