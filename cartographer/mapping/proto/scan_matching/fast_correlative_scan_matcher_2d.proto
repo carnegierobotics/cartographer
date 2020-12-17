@@ -1,0 +1,44 @@
+// Copyright 2016 The Cartographer Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+import "cartographer/mapping/proto/2d/cell_limits.proto";
+import "cartographer/mapping/proto/2d/map_limits.proto";
+import "cartographer/mapping/proto/scan_matching/fast_correlative_scan_matcher_options_2d.proto";
+
+package cartographer.mapping.scan_matching.proto;
+
+message Vector2i {
+  int32 x = 1;
+  int32 y = 2;
+}
+
+message PrecomputationGrid2D {
+  Vector2i offset = 1;
+  cartographer.mapping.proto.CellLimits wide_limits = 3;
+  float min_score = 4;
+  float max_score = 5;
+  bytes cells = 6;
+}
+
+message PrecomputationGridStack2D {
+  repeated PrecomputationGrid2D precomputation_grids = 1;
+}
+
+message FastCorrelativeScanMatcher2D {
+  cartographer.mapping.scan_matching.proto.FastCorrelativeScanMatcherOptions2D options = 1;
+  cartographer.mapping.proto.MapLimits limits = 2;
+  PrecomputationGridStack2D precomputation_grids = 3;
+}

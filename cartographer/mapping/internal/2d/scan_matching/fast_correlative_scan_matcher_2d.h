@@ -33,6 +33,7 @@
 #include "cartographer/mapping/2d/grid_2d.h"
 #include "cartographer/mapping/internal/2d/scan_matching/correlative_scan_matcher_2d.h"
 #include "cartographer/mapping/proto/scan_matching/fast_correlative_scan_matcher_options_2d.pb.h"
+#include "cartographer/mapping/proto/scan_matching/fast_correlative_scan_matcher_2d.pb.h"
 #include "cartographer/sensor/point_cloud.h"
 
 namespace cartographer {
@@ -50,6 +51,10 @@ class PrecomputationGrid2D {
  public:
   PrecomputationGrid2D(const Grid2D& grid, const CellLimits& limits, int width,
                        std::vector<float>* reusable_intermediate_grid);
+
+  PrecomputationGrid2D(const proto::PrecomputationGrid2D & proto);
+
+  proto::PrecomputationGrid2D ToProto() const;
 
   // Returns a value between 0 and 255 to represent probabilities between
   // min_score and max_score.
@@ -98,6 +103,10 @@ class PrecomputationGridStack2D {
       const Grid2D& grid,
       int branch_and_bound_depth);
 
+  PrecomputationGridStack2D(const proto::PrecomputationGridStack2D & proto);
+
+  proto::PrecomputationGridStack2D ToProto() const;
+
   const PrecomputationGrid2D& Get(int index) const {
     return precomputation_grids_[index];
   }
@@ -114,11 +123,14 @@ class FastCorrelativeScanMatcher2D {
   FastCorrelativeScanMatcher2D(
       const Grid2D& grid,
       const proto::FastCorrelativeScanMatcherOptions2D& options);
+  FastCorrelativeScanMatcher2D(const proto::FastCorrelativeScanMatcher2D & proto);
   ~FastCorrelativeScanMatcher2D();
 
   FastCorrelativeScanMatcher2D(const FastCorrelativeScanMatcher2D&) = delete;
   FastCorrelativeScanMatcher2D& operator=(const FastCorrelativeScanMatcher2D&) =
       delete;
+
+  proto::FastCorrelativeScanMatcher2D ToProto() const;
 
   // Aligns 'point_cloud' within the 'grid' given an
   // 'initial_pose_estimate'. If a score above 'min_score' (excluding equality)
