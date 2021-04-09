@@ -145,6 +145,9 @@ void Grid2D::GrowLimits(const Eigen::Vector2f& point,
     const int new_size = new_limits.cell_limits().num_x_cells *
                          new_limits.cell_limits().num_y_cells;
 
+    // Check for overflow
+    CHECK(new_limits.cell_limits().num_x_cells == 0 || new_size / new_limits.cell_limits().num_x_cells == new_limits.cell_limits().num_y_cells);
+
     for (size_t grid_index = 0; grid_index < grids.size(); ++grid_index) {
       std::vector<uint16> new_cells(new_size,
                                     grids_unknown_cell_values[grid_index]);
