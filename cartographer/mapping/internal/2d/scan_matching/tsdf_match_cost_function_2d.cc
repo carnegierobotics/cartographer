@@ -43,27 +43,15 @@ class TSDFMatchCostFunction2D {
     const Eigen::Matrix<T, 2, 2> rotation_matrix = rotation.toRotationMatrix();
     Eigen::Matrix<T, 3, 3> transform;
     transform << rotation_matrix, translation, T(0.), T(0.), T(1.);
-
-    T summed_weight = T(0);
     for (size_t i = 0; i < point_cloud_.size(); ++i) {
       // Note that this is a 2D point. The third component is a scaling factor.
       const Eigen::Matrix<T, 3, 1> point((T(point_cloud_[i].position.x())),
                                          (T(point_cloud_[i].position.y())),
                                          T(1.));
       const Eigen::Matrix<T, 3, 1> world = transform * point;
-      const T point_weight = interpolated_grid_.GetWeight(world[0], world[1]);
-      summed_weight += point_weight;
       residual[i] =
-          T(point_cloud_.size()) * residual_scaling_factor_ *
-          interpolated_grid_.GetCorrespondenceCost(world[0], world[1]) *
-          point_weight;
-    }
-    if (summed_weight == T(0))
-    {
-        return true;
-    }
-    for (size_t i = 0; i < point_cloud_.size(); ++i) {
-      residual[i] /= summed_weight;
+          residual_scaling_factor_ *
+          interpolated_grid_.GetCorrespondenceCost(world[0], world[1]);
     }
     return true;
   }
