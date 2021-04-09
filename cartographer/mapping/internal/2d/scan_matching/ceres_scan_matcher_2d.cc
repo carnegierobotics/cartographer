@@ -65,30 +65,28 @@ void CeresScanMatcher2D::Match(const Eigen::Vector2d& target_translation,
                                const sensor::PointCloud& point_cloud,
                                const Grid2D& grid,
                                transform::Rigid2d* const pose_estimate,
-                               ceres::Solver::Summary* const summary) const {
+                               ceres::Solver::Summary* summary,
+                               Eigen::Matrix3d * seedless_precision) const {
   double ceres_pose_estimate[3] = {initial_pose_estimate.translation().x(),
                                    initial_pose_estimate.translation().y(),
                                    initial_pose_estimate.rotation().angle()};
   ceres::Problem problem;
   CHECK_GT(options_.occupied_space_weight(), 0.);
-  switch (grid.GetGridType()) {
-    case GridType::PROBABILITY_GRID:
-      problem.AddResidualBlock(
-          CreateOccupiedSpaceCostFunction2D(
-              options_.occupied_space_weight() /
-                  std::sqrt(static_cast<double>(point_cloud.size())),
-              point_cloud, grid),
-          nullptr /* loss function */, ceres_pose_estimate);
-      break;
-    case GridType::TSDF:
-      problem.AddResidualBlock(
-          CreateTSDFMatchCostFunction2D(
-              options_.occupied_space_weight() /
-                  std::sqrt(static_cast<double>(point_cloud.size())),
-              point_cloud, static_cast<const TSDF2D&>(grid)),
-          nullptr /* loss function */, ceres_pose_estimate);
-      break;
-  }
+
+  auto scalingWeight = options_.occupied_space_weight() / std::sqrt(static_cast<double>(point_cloud.size()));
+
+  auto costFunction = [&]() {
+      switch (grid.GetGridType()) {
+          case GridType::PROBABILITY_GRID:
+              return CreateOccupiedSpaceCostFunction2D(scalingWeight, point_cloud, grid);
+          case GridType::TSDF:
+              return CreateTSDFMatchCostFunction2D(scalingWeight, point_cloud, static_cast<const TSDF2D&>(grid));
+      }
+      throw std::logic_error("unknown GridType");
+  }();
+
+  problem.AddResidualBlock(costFunction, nullptr /* loss function */, ceres_pose_estimate);
+
   CHECK_GT(options_.translation_weight(), 0.);
   problem.AddResidualBlock(
       TranslationDeltaCostFunctor2D::CreateAutoDiffCostFunction(
@@ -101,6 +99,18 @@ void CeresScanMatcher2D::Match(const Eigen::Vector2d& target_translation,
       nullptr /* loss function */, ceres_pose_estimate);
 
   ceres::Solve(ceres_solver_options_, &problem, summary);
+
+  if(seedless_precision)
+  {
+      auto parameter_blocks   = std::array<const double*, 1>{{ceres_pose_estimate}};
+      auto residuals          = std::vector<double>(point_cloud.size(), 0.0);
+      auto row_major_jacobian = Eigen::Matrix<double, Eigen::Dynamic, 3, Eigen::RowMajor>(point_cloud.size(), 4);
+      auto jacobianPtr        = row_major_jacobian.data(); // for use to create fake array of jacobians
+
+      costFunction->Evaluate(parameter_blocks.data(), residuals.data(), &jacobianPtr);
+
+      *seedless_precision = (row_major_jacobian.transpose() * row_major_jacobian);
+  }
 
   *pose_estimate = transform::Rigid2d(
       {ceres_pose_estimate[0], ceres_pose_estimate[1]}, ceres_pose_estimate[2]);

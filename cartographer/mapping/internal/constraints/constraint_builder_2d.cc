@@ -258,19 +258,33 @@ void ConstraintBuilder2D::ComputeConstraint(
   // Use the CSM estimate as both the initial and previous pose. This has the
   // effect that, in the absence of better information, we prefer the original
   // CSM estimate.
+
   ceres::Solver::Summary unused_summary;
+  Eigen::Matrix3d seedless_precision;
   ceres_scan_matcher_.Match(pose_estimate.translation(), pose_estimate,
                             constant_data->filtered_gravity_aligned_point_cloud,
                             *submap_scan_matcher.grid, &pose_estimate,
-                            &unused_summary);
+                            &unused_summary, &seedless_precision);
 
   const transform::Rigid2d constraint_transform =
       ComputeSubmapPose(*submap).inverse() * pose_estimate;
+
+  auto seedless_precision_chol_up = [&](){
+      if (not options_.use_precision_matrix())
+          return Eigen::Matrix3d::Identity().eval();
+
+      return Eigen::Matrix3d(
+          Eigen::Matrix3d(seedless_precision.llt().matrixU()) // Choleskey
+          * Eigen::Vector3d(0.02, 0.02, 0.01).asDiagonal()    // FIXME fudge factor to match normal constraint SPA error
+      );
+  }();
+
   constraint->reset(new Constraint{submap_id,
                                    node_id,
                                    {transform::Embed3D(constraint_transform),
                                     options_.loop_closure_translation_weight(),
-                                    options_.loop_closure_rotation_weight()},
+                                    options_.loop_closure_rotation_weight(),
+                                    seedless_precision_chol_up},
                                    Constraint::INTER_SUBMAP});
 
   if (options_.log_matches()) {
@@ -288,6 +302,7 @@ void ConstraintBuilder2D::ComputeConstraint(
            << std::setprecision(3) << std::abs(difference.normalized_angle());
     }
     info << " with score " << std::setprecision(1) << 100. * score << "%.";
+    info << "\nPrecision was: \n" << seedless_precision;
     LOG(INFO) << info.str();
   }
 }

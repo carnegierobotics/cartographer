@@ -37,15 +37,32 @@ class SpaCostFunction2D {
       const PoseGraphInterface::Constraint::Pose& observed_relative_pose)
       : observed_relative_pose_(observed_relative_pose) {}
 
+  template <typename T> static Eigen::Matrix<T, 3, 3> Convert3x3(const Eigen::Matrix3d & mat)
+  {
+      auto returnValue = Eigen::Matrix<T, 3, 3>{};
+      returnValue <<
+         T{mat(0,0)}, T{mat(0,1)}, T{mat(0,2)},
+         T{mat(1,0)}, T{mat(1,1)}, T{mat(1,2)},
+         T{mat(2,0)}, T{mat(2,1)}, T{mat(2,2)};
+      return returnValue;
+  }
+
   template <typename T>
-  bool operator()(const T* const start_pose, const T* const end_pose,
-                  T* e) const {
-    const std::array<T, 3> error =
-        ScaleError(ComputeUnscaledError(
-                       transform::Project2D(observed_relative_pose_.zbar_ij),
-                       start_pose, end_pose),
+  bool operator()(const T* const start_pose, const T* const end_pose, T* e) const {
+    auto raw_error = ComputeUnscaledError(
+        transform::Project2D(observed_relative_pose_.zbar_ij), start_pose, end_pose);
+
+    auto error_weight_mat = Convert3x3<T>(observed_relative_pose_.weight_matrix);
+
+    using ErrorMatrixMap = Eigen::Map<Eigen::Matrix<T, 3, 1>>;
+    auto transformed_error = std::array<T, 3>{};
+    ErrorMatrixMap(transformed_error.data()) = error_weight_mat * ErrorMatrixMap(raw_error.data());
+
+    auto error =
+        ScaleError(transformed_error,
                    observed_relative_pose_.translation_weight,
                    observed_relative_pose_.rotation_weight);
+
     std::copy(std::begin(error), std::end(error), e);
     return true;
   }
@@ -53,6 +70,11 @@ class SpaCostFunction2D {
  private:
   const PoseGraphInterface::Constraint::Pose observed_relative_pose_;
 };
+
+template <> Eigen::Matrix<double, 3, 3> SpaCostFunction2D::Convert3x3<double>(const Eigen::Matrix3d & mat)
+{
+    return mat;
+}
 
 class AnalyticalSpaCostFunction2D
     : public ceres::SizedCostFunction<3 /* number of residuals */,

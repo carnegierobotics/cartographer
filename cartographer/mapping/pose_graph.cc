@@ -32,7 +32,9 @@ proto::PoseGraph::Constraint::Tag ToProto(
     case PoseGraph::Constraint::Tag::INTER_SUBMAP:
       return proto::PoseGraph::Constraint::INTER_SUBMAP;
   }
-  LOG(FATAL) << "Unsupported tag.";
+  auto error = "Unsupported tag.";
+  LOG(FATAL) << error;
+  throw std::runtime_error(error);
 }
 
 PoseGraph::Constraint::Tag FromProto(
@@ -46,7 +48,38 @@ PoseGraph::Constraint::Tag FromProto(
     case ::google::protobuf::kint32min: {
     }
   }
-  LOG(FATAL) << "Unsupported tag.";
+  auto error = "Unsupported tag.";
+  LOG(FATAL) << error;
+  throw std::runtime_error(error);
+}
+
+Eigen::Matrix3d FromProto(const proto::Matrix3d &matrix3d_proto) {
+    auto matrix = Eigen::Matrix3d{};
+    matrix
+       << matrix3d_proto.r0_c1()
+        , matrix3d_proto.r0_c2()
+        , matrix3d_proto.r0_c0()
+        , matrix3d_proto.r1_c1()
+        , matrix3d_proto.r1_c2()
+        , matrix3d_proto.r1_c0()
+        , matrix3d_proto.r2_c1()
+        , matrix3d_proto.r2_c2()
+        , matrix3d_proto.r2_c0();
+    return matrix;
+}
+
+proto::Matrix3d ToProto(const Eigen::Matrix3d &matrix3d) {
+    auto matrix3d_proto = proto::Matrix3d{};
+    matrix3d_proto.set_r0_c0(matrix3d(0,0));
+    matrix3d_proto.set_r1_c0(matrix3d(1,0));
+    matrix3d_proto.set_r2_c0(matrix3d(2,0));
+    matrix3d_proto.set_r0_c1(matrix3d(0,1));
+    matrix3d_proto.set_r1_c1(matrix3d(1,1));
+    matrix3d_proto.set_r2_c1(matrix3d(2,1));
+    matrix3d_proto.set_r0_c2(matrix3d(0,2));
+    matrix3d_proto.set_r1_c2(matrix3d(1,2));
+    matrix3d_proto.set_r2_c2(matrix3d(2,2));
+    return matrix3d_proto;
 }
 
 std::vector<PoseGraph::Constraint> FromProto(
@@ -59,10 +92,19 @@ std::vector<PoseGraph::Constraint> FromProto(
         constraint_proto.submap_id().submap_index()};
     const mapping::NodeId node_id{constraint_proto.node_id().trajectory_id(),
                                   constraint_proto.node_id().node_index()};
-    const PoseGraph::Constraint::Pose pose{
-        transform::ToRigid3(constraint_proto.relative_pose()),
-        constraint_proto.translation_weight(),
-        constraint_proto.rotation_weight()};
+    const auto pose = [&]() -> PoseGraph::Constraint::Pose {
+        auto relative_pose = transform::ToRigid3(constraint_proto.relative_pose());
+        auto translation_weight = constraint_proto.translation_weight();
+        auto rotation_weight = constraint_proto.rotation_weight();
+
+        if(constraint_proto.has_weight_matrix())
+        {
+            auto weight_matrix = FromProto(constraint_proto.weight_matrix());
+            return { relative_pose, translation_weight, rotation_weight, weight_matrix };
+        }
+
+        return { relative_pose, translation_weight, rotation_weight};
+    }();
     const PoseGraph::Constraint::Tag tag = FromProto(constraint_proto.tag());
     constraints.push_back(PoseGraph::Constraint{submap_id, node_id, pose, tag});
   }
@@ -120,6 +162,8 @@ proto::PoseGraph::Constraint ToProto(const PoseGraph::Constraint& constraint) {
       transform::ToProto(constraint.pose.zbar_ij);
   constraint_proto.set_translation_weight(constraint.pose.translation_weight);
   constraint_proto.set_rotation_weight(constraint.pose.rotation_weight);
+  if(not constraint.pose.weight_matrix.isIdentity())
+      *constraint_proto.mutable_weight_matrix() = ToProto(constraint.pose.weight_matrix);
   constraint_proto.mutable_submap_id()->set_trajectory_id(
       constraint.submap_id.trajectory_id);
   constraint_proto.mutable_submap_id()->set_submap_index(

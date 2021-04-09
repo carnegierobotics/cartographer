@@ -50,7 +50,8 @@ class CeresScanMatcher2D {
              const transform::Rigid2d& initial_pose_estimate,
              const sensor::PointCloud& point_cloud, const Grid2D& grid,
              transform::Rigid2d* pose_estimate,
-             ceres::Solver::Summary* summary) const;
+             ceres::Solver::Summary* summary,
+             Eigen::Matrix3d * seedless_precision = nullptr) const;
 
  private:
   const proto::CeresScanMatcherOptions2D options_;

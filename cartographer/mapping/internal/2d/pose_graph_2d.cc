@@ -793,7 +793,10 @@ void PoseGraph2D::AddSerializedConstraints(
               transform::Rigid3d::Rotation(
                   data_.trajectory_nodes.at(constraint.node_id)
                       .constant_data->gravity_alignment.inverse()),
-          constraint.pose.translation_weight, constraint.pose.rotation_weight};
+          constraint.pose.translation_weight,
+          constraint.pose.rotation_weight,
+          constraint.pose.weight_matrix
+      };
       data_.constraints.push_back(Constraint{
           constraint.submap_id, constraint.node_id, pose, constraint.tag});
     }
@@ -1007,7 +1010,9 @@ std::vector<PoseGraphInterface::Constraint> PoseGraph2D::constraints() const {
                                  data_.trajectory_nodes.at(constraint.node_id)
                                      .constant_data->gravity_alignment),
                          constraint.pose.translation_weight,
-                         constraint.pose.rotation_weight},
+                         constraint.pose.rotation_weight,
+                         constraint.pose.weight_matrix
+                         },
         constraint.tag});
   }
   return result;
