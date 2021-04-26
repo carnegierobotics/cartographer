@@ -78,6 +78,11 @@ class ConstraintBuilder2D {
                           const NodeId& node_id,
                           const TrajectoryNode::Data* const constant_data,
                           const transform::Rigid2d& initial_relative_pose);
+  void MaybeAddConstraint(const SubmapId& submap_id, const Submap2D* submap,
+                          const NodeId& node_id,
+                          const TrajectoryNode::Data* const constant_data,
+                          const transform::Rigid2d& initial_relative_pose,
+                          const double max_constraint_distance);
 
   // Schedules exploring a new constraint between 'submap' identified by
   // 'submap_id' and the 'compressed_point_cloud' for 'node_id'.

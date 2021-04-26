@@ -250,7 +250,15 @@ void PoseGraph2D::AddLandmarkData(int trajectory_id,
 }
 
 void PoseGraph2D::ComputeConstraint(const NodeId& node_id,
-                                    const SubmapId& submap_id) {
+                                    const SubmapId& submap_id)
+{
+    ComputeConstraint(node_id, submap_id, options_.constraint_builder_options().max_constraint_distance(), false);
+}
+
+void PoseGraph2D::ComputeConstraint(const NodeId& node_id,
+                                    const SubmapId& submap_id,
+                                    const double max_constraint_distance,
+                                    const bool force_global_constraint) {
   bool maybe_add_local_constraint = false;
   bool maybe_add_global_constraint = false;
   const TrajectoryNode::Data* constant_data;
@@ -285,16 +293,18 @@ void PoseGraph2D::ComputeConstraint(const NodeId& node_id,
     submap = static_cast<const Submap2D*>(
         data_.submap_data.at(submap_id).submap.get());
   }
+  std::cout << "maybe_add_local_constraint? " << (maybe_add_local_constraint ? "true" : "false") << std::endl;
+  std::cout << "maybe_add_global_constraint? " << (maybe_add_global_constraint ? "true" : "false") << std::endl;
 
-  if (maybe_add_local_constraint) {
+  if (maybe_add_local_constraint and not force_global_constraint) {
     const transform::Rigid2d initial_relative_pose =
         optimization_problem_->submap_data()
             .at(submap_id)
             .global_pose.inverse() *
         optimization_problem_->node_data().at(node_id).global_pose_2d;
     constraint_builder_.MaybeAddConstraint(
-        submap_id, submap, node_id, constant_data, initial_relative_pose);
-  } else if (maybe_add_global_constraint) {
+        submap_id, submap, node_id, constant_data, initial_relative_pose, max_constraint_distance);
+  } else if (maybe_add_global_constraint or force_global_constraint) {
     constraint_builder_.MaybeAddGlobalConstraint(submap_id, submap, node_id,
                                                  constant_data);
   }

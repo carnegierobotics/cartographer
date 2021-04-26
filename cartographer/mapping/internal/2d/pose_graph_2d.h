@@ -164,6 +164,23 @@ class PoseGraph2D : public PoseGraph {
   void ClearWorkQueue() LOCKS_EXCLUDED(mutex_)
       LOCKS_EXCLUDED(work_queue_mutex_);
 
+  // Computes constraints for a node and submap pair.
+  void ComputeConstraintPublic(const NodeId& node_id, const SubmapId& submap_id, double distance)
+  {
+      ComputeConstraint(node_id, submap_id, distance, true);
+  }
+
+  bool IsSubmapFinished(const SubmapId& submap_id) LOCKS_EXCLUDED(mutex_)
+  {
+      for (const auto& submap_id_data : data_.submap_data) {
+          if(submap_id_data.id == submap_id)
+          {
+              return submap_id_data.data.state == SubmapState::kFinished;
+          }
+      }
+      return false;
+  }
+
  private:
   MapById<SubmapId, PoseGraphInterface::SubmapData> GetSubmapDataUnderLock()
       const EXCLUSIVE_LOCKS_REQUIRED(mutex_);
@@ -199,6 +216,10 @@ class PoseGraph2D : public PoseGraph {
 
   // Computes constraints for a node and submap pair.
   void ComputeConstraint(const NodeId& node_id, const SubmapId& submap_id)
+      LOCKS_EXCLUDED(mutex_);
+
+  // Computes constraints for a node and submap pair.
+  void ComputeConstraint(const NodeId& node_id, const SubmapId& submap_id, const double distance, const bool force_global_constraint)
       LOCKS_EXCLUDED(mutex_);
 
   // Deletes trajectories waiting for deletion. Must not be called during
