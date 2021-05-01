@@ -93,7 +93,7 @@ void ConstraintBuilder2D::MaybeAddConstraint(
     const double max_constraint_distance) {
 
   /////////////////////////////////////////// Surgical implant //////////////////////////////////////
-  // TODO (ajakhotia): Simplify this logic.
+  // TODO[4] (erandtke): Simplify this logic.
   const auto & mapLimits     = submap->grid()->limits();
   const auto & cellLimits    = mapLimits.cell_limits();
   const auto & metersPerCell = mapLimits.resolution();
@@ -108,8 +108,6 @@ void ConstraintBuilder2D::MaybeAddConstraint(
 
   const auto distFromCenter_m = (submap_probGridCenter_m.head(2) - initial_relative_pose.translation()).norm();
 
-  //if (distFromCenter_m > options_.max_constraint_distance())
-  std::cout << "dist from center: " << distFromCenter_m << ", max: " << max_constraint_distance << std::endl;
   if (distFromCenter_m > max_constraint_distance)
   {
       return;
@@ -117,10 +115,6 @@ void ConstraintBuilder2D::MaybeAddConstraint(
   /////////////////////////////////////////// End Surgical implant //////////////////////////////////
   ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-  //if (initial_relative_pose.translation().norm() >
-  //    options_.max_constraint_distance()) {
-  //  return;
-  //}
   if (!sampler_.Pulse()) return;
 
   absl::MutexLock locker(&mutex_);
@@ -251,9 +245,7 @@ void ConstraintBuilder2D::ComputeConstraint(
       CHECK_GE(submap_id.trajectory_id, 0);
       kGlobalConstraintsFoundMetric->Increment();
       kGlobalConstraintScoresMetric->Observe(score);
-      std::cout << "match full submap  " << options_.global_localization_min_score() << ": " << score << std::endl;
     } else {
-      std::cout << "match full submap failed  " << options_.global_localization_min_score() << ": " << score << std::endl;
       return;
     }
   } else {
@@ -262,12 +254,10 @@ void ConstraintBuilder2D::ComputeConstraint(
             initial_pose, constant_data->filtered_gravity_aligned_point_cloud,
             options_.min_score(), &score, &pose_estimate)) {
       // We've reported a successful local match.
-      std::cout << "match found above min score  " << options_.global_localization_min_score() << ": " << score << std::endl;
       CHECK_GT(score, options_.min_score());
       kConstraintsFoundMetric->Increment();
       kConstraintScoresMetric->Observe(score);
     } else {
-      std::cout << "no match found above min score  " << options_.global_localization_min_score() << ": " << score << std::endl;
       return;
     }
   }

@@ -167,9 +167,15 @@ class PoseGraph2D : public PoseGraph {
   // Computes constraints for a node and submap pair.
   void ComputeConstraintPublic(const NodeId& node_id, const SubmapId& submap_id, double distance)
   {
-      std::cout << __func__ << std::endl;
       ComputeConstraint(node_id, submap_id, distance, true);
   }
+
+  // Waits for all requested operations to complete.
+  void WaitForAllComputationsPublic()
+  {
+      WaitForAllComputations();
+  }
+
 
   bool IsSubmapFinished(const SubmapId& submap_id) LOCKS_EXCLUDED(mutex_)
   {
