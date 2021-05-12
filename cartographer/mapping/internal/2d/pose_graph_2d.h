@@ -171,54 +171,21 @@ class PoseGraph2D : public PoseGraph {
    * @param[out] constraint
    * @return                true if successful, false if unsuccessful
    */
-  bool MaybeComputeConstraint(const NodeId& node_id, const SubmapId& submap_id, Constraint &constraint)
-  {
-      auto submap = static_cast<const Submap2D*>(
-        data_.submap_data.at(submap_id).submap.get());
-      auto constant_data = data_.trajectory_nodes.at(node_id).constant_data.get();
-      std::unique_ptr<Constraint> maybeConstraint;
-      constraint_builder_.ComputeConstraintPublic(submap_id, submap,
-                                node_id,
-                                constant_data,
-                                &maybeConstraint);
-
-      if(maybeConstraint == nullptr)
-          return false;
-      constraint = *maybeConstraint;
-      return true;
-  }
+  bool MaybeComputeConstraint(const NodeId& node_id, const SubmapId& submap_id, Constraint &constraint);
 
   /**
    * Is submap finished?
    * @param[in] submap_id
    * @return                true if finished
    */
-  bool IsSubmapFinished(const SubmapId& submap_id) LOCKS_EXCLUDED(mutex_)
-  {
-      for (const auto& submap_id_data : data_.submap_data) {
-          if(submap_id_data.id == submap_id)
-          {
-              return submap_id_data.data.state == SubmapState::kFinished;
-          }
-      }
-      return false;
-  }
+  bool IsSubmapFinished(const SubmapId& submap_id) LOCKS_EXCLUDED(mutex_);
 
   /**
    * Get nodes by submap id.
    * @param[in] submap_id
    * @return                set of node ids
    */
-  std::set<NodeId> GetNodeIdsInSubmap(const SubmapId& submap_id) LOCKS_EXCLUDED(mutex_)
-  {
-      for (const auto& submap_id_data : data_.submap_data) {
-          if(submap_id_data.id == submap_id)
-          {
-              return submap_id_data.data.node_ids;
-          }
-      }
-      return {};
-  }
+  std::set<NodeId> GetNodeIdsInSubmap(const SubmapId& submap_id) LOCKS_EXCLUDED(mutex_);
 
  private:
   MapById<SubmapId, PoseGraphInterface::SubmapData> GetSubmapDataUnderLock()
@@ -255,10 +222,6 @@ class PoseGraph2D : public PoseGraph {
 
   // Computes constraints for a node and submap pair.
   void ComputeConstraint(const NodeId& node_id, const SubmapId& submap_id)
-      LOCKS_EXCLUDED(mutex_);
-
-  // Computes constraints for a node and submap pair.
-  void ComputeConstraint(const NodeId& node_id, const SubmapId& submap_id, const double distance, const bool force_global_constraint)
       LOCKS_EXCLUDED(mutex_);
 
   // Deletes trajectories waiting for deletion. Must not be called during

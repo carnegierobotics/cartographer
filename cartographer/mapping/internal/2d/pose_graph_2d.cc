@@ -250,15 +250,7 @@ void PoseGraph2D::AddLandmarkData(int trajectory_id,
 }
 
 void PoseGraph2D::ComputeConstraint(const NodeId& node_id,
-                                    const SubmapId& submap_id)
-{
-    ComputeConstraint(node_id, submap_id, options_.constraint_builder_options().max_constraint_distance(), false);
-}
-
-void PoseGraph2D::ComputeConstraint(const NodeId& node_id,
-                                    const SubmapId& submap_id,
-                                    const double max_constraint_distance,
-                                    const bool force_global_constraint) {
+                                    const SubmapId& submap_id) {
   bool maybe_add_local_constraint = false;
   bool maybe_add_global_constraint = false;
   const TrajectoryNode::Data* constant_data;
@@ -294,15 +286,15 @@ void PoseGraph2D::ComputeConstraint(const NodeId& node_id,
         data_.submap_data.at(submap_id).submap.get());
   }
 
-  if (maybe_add_local_constraint and not force_global_constraint) {
+  if (maybe_add_local_constraint) {
     const transform::Rigid2d initial_relative_pose =
         optimization_problem_->submap_data()
             .at(submap_id)
             .global_pose.inverse() *
         optimization_problem_->node_data().at(node_id).global_pose_2d;
     constraint_builder_.MaybeAddConstraint(
-        submap_id, submap, node_id, constant_data, initial_relative_pose, max_constraint_distance);
-  } else if (maybe_add_global_constraint or force_global_constraint) {
+        submap_id, submap, node_id, constant_data, initial_relative_pose);
+  } else if (maybe_add_global_constraint) {
     constraint_builder_.MaybeAddGlobalConstraint(submap_id, submap, node_id,
                                                  constant_data);
   }
@@ -1087,6 +1079,45 @@ PoseGraph2D::GetAllSubmapPoses() const {
                               submap_data.pose});
   }
   return submap_poses;
+}
+
+bool PoseGraph2D::MaybeComputeConstraint(const NodeId& node_id, const SubmapId& submap_id, Constraint &constraint)
+{
+  auto submap = static_cast<const Submap2D*>(
+    data_.submap_data.at(submap_id).submap.get());
+  auto constant_data = data_.trajectory_nodes.at(node_id).constant_data.get();
+  std::unique_ptr<Constraint> maybeConstraint;
+  constraint_builder_.MaybeFindGlobalConstraint(submap_id, submap,
+                            node_id,
+                            constant_data,
+                            &maybeConstraint);
+
+  if(maybeConstraint == nullptr)
+      return false;
+  constraint = *maybeConstraint;
+  return true;
+}
+
+bool PoseGraph2D::IsSubmapFinished(const SubmapId& submap_id)
+{
+  for (const auto& submap_id_data : data_.submap_data) {
+      if(submap_id_data.id == submap_id)
+      {
+          return submap_id_data.data.state == SubmapState::kFinished;
+      }
+  }
+  return false;
+}
+
+std::set<NodeId> PoseGraph2D::GetNodeIdsInSubmap(const SubmapId& submap_id)
+{
+  for (const auto& submap_id_data : data_.submap_data) {
+      if(submap_id_data.id == submap_id)
+      {
+          return submap_id_data.data.node_ids;
+      }
+  }
+  return {};
 }
 
 transform::Rigid3d PoseGraph2D::ComputeLocalToGlobalTransform(
