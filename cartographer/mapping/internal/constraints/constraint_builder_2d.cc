@@ -75,25 +75,10 @@ ConstraintBuilder2D::~ConstraintBuilder2D() {
 void ConstraintBuilder2D::MaybeAddConstraint(
     const SubmapId& submap_id, const Submap2D* const submap,
     const NodeId& node_id, const TrajectoryNode::Data* const constant_data,
-    const transform::Rigid2d& initial_relative_pose)
-{
-    MaybeAddConstraint(
-        submap_id,
-        submap,
-        node_id,
-        constant_data,
-        initial_relative_pose,
-        options_.max_constraint_distance());
-}
-
-void ConstraintBuilder2D::MaybeAddConstraint(
-    const SubmapId& submap_id, const Submap2D* const submap,
-    const NodeId& node_id, const TrajectoryNode::Data* const constant_data,
-    const transform::Rigid2d& initial_relative_pose,
-    const double max_constraint_distance) {
+    const transform::Rigid2d& initial_relative_pose) {
 
   /////////////////////////////////////////// Surgical implant //////////////////////////////////////
-  // TODO[4] (erandtke): Simplify this logic.
+  // TODO (ajakhotia): Simplify this logic.
   const auto & mapLimits     = submap->grid()->limits();
   const auto & cellLimits    = mapLimits.cell_limits();
   const auto & metersPerCell = mapLimits.resolution();
@@ -108,7 +93,7 @@ void ConstraintBuilder2D::MaybeAddConstraint(
 
   const auto distFromCenter_m = (submap_probGridCenter_m.head(2) - initial_relative_pose.translation()).norm();
 
-  if (distFromCenter_m > max_constraint_distance)
+  if (distFromCenter_m > options_.max_constraint_distance())
   {
       return;
   }
