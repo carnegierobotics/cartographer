@@ -164,19 +164,35 @@ class PoseGraph2D : public PoseGraph {
   void ClearWorkQueue() LOCKS_EXCLUDED(mutex_)
       LOCKS_EXCLUDED(work_queue_mutex_);
 
-  // Computes constraints for a node and submap pair.
-  void ComputeConstraintPublic(const NodeId& node_id, const SubmapId& submap_id, double distance)
+  /**
+   * Tries to compute a constraint between node and submap.
+   * @param[in] node_id
+   * @param[in] submap_id
+   * @param[out] constraint
+   * @return                true if successful, false if unsuccessful
+   */
+  bool MaybeComputeConstraint(const NodeId& node_id, const SubmapId& submap_id, Constraint &constraint)
   {
-      ComputeConstraint(node_id, submap_id, distance, true);
+      auto submap = static_cast<const Submap2D*>(
+        data_.submap_data.at(submap_id).submap.get());
+      auto constant_data = data_.trajectory_nodes.at(node_id).constant_data.get();
+      std::unique_ptr<Constraint> maybeConstraint;
+      constraint_builder_.ComputeConstraintPublic(submap_id, submap,
+                                node_id,
+                                constant_data,
+                                &maybeConstraint);
+
+      if(maybeConstraint == nullptr)
+          return false;
+      constraint = *maybeConstraint;
+      return true;
   }
 
-  // Waits for all requested operations to complete.
-  void WaitForAllComputationsPublic()
-  {
-      WaitForAllComputations();
-  }
-
-
+  /**
+   * Is submap finished?
+   * @param[in] submap_id
+   * @return                true if finished
+   */
   bool IsSubmapFinished(const SubmapId& submap_id) LOCKS_EXCLUDED(mutex_)
   {
       for (const auto& submap_id_data : data_.submap_data) {
@@ -188,6 +204,11 @@ class PoseGraph2D : public PoseGraph {
       return false;
   }
 
+  /**
+   * Get nodes by submap id.
+   * @param[in] submap_id
+   * @return                set of node ids
+   */
   std::set<NodeId> GetNodeIdsInSubmap(const SubmapId& submap_id) LOCKS_EXCLUDED(mutex_)
   {
       for (const auto& submap_id_data : data_.submap_data) {

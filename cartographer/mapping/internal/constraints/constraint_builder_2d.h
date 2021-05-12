@@ -110,6 +110,43 @@ class ConstraintBuilder2D {
 
   static void RegisterMetrics(metrics::FamilyFactory* family_factory);
 
+  void ComputeConstraintPublic( const SubmapId& submap_id, const Submap2D* submap,
+                                const NodeId& node_id,
+                                const TrajectoryNode::Data* const constant_data,
+                                std::unique_ptr<Constraint>* constraint)
+  {
+      // 
+      // get cached scanmatcher, or build and cache scanmatcher
+      //
+
+      SubmapScanMatcher* submap_scan_matcher;
+      if (submap_scan_matchers_.count(submap_id) != 0) {
+          submap_scan_matcher = &submap_scan_matchers_.at(submap_id);
+      }
+      else
+      {
+          submap_scan_matcher = &submap_scan_matchers_[submap_id];
+          auto& scan_matcher_options = options_.fast_correlative_scan_matcher_options();
+          submap_scan_matcher->grid = submap->grid();
+          submap_scan_matcher->fast_correlative_scan_matcher =
+                absl::make_unique<scan_matching::FastCorrelativeScanMatcher2D>(
+                    *(submap_scan_matcher->grid), scan_matcher_options);
+      }
+
+      auto initial_relative_pose = transform::Rigid2d::Identity();
+      auto match_full_submap = true;
+
+      ComputeConstraint(submap_id,
+                        submap,
+                        node_id,
+                        match_full_submap,
+                        constant_data,
+                        initial_relative_pose,
+                        *submap_scan_matcher,
+                        constraint);
+  }
+
+
  private:
   struct SubmapScanMatcher {
     const Grid2D* grid = nullptr;

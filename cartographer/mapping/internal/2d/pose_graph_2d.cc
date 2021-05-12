@@ -259,7 +259,6 @@ void PoseGraph2D::ComputeConstraint(const NodeId& node_id,
                                     const SubmapId& submap_id,
                                     const double max_constraint_distance,
                                     const bool force_global_constraint) {
-  std::cout << "force_global_constraint? " << (force_global_constraint ? "true" : "false") << std::endl;
   bool maybe_add_local_constraint = false;
   bool maybe_add_global_constraint = false;
   const TrajectoryNode::Data* constant_data;
@@ -294,9 +293,6 @@ void PoseGraph2D::ComputeConstraint(const NodeId& node_id,
     submap = static_cast<const Submap2D*>(
         data_.submap_data.at(submap_id).submap.get());
   }
-  std::cout << "maybe_add_local_constraint? " << (maybe_add_local_constraint ? "true" : "false") << std::endl;
-  std::cout << "maybe_add_global_constraint? " << (maybe_add_global_constraint ? "true" : "false") << std::endl;
-  std::cout << "force_global_constraint? " << (force_global_constraint ? "true" : "false") << std::endl;
 
   if (maybe_add_local_constraint and not force_global_constraint) {
     const transform::Rigid2d initial_relative_pose =
