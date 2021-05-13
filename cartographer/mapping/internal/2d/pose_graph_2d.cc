@@ -794,8 +794,31 @@ void PoseGraph2D::AddSerializedConstraints(
                   data_.trajectory_nodes.at(constraint.node_id)
                       .constant_data->gravity_alignment.inverse()),
           constraint.pose.translation_weight, constraint.pose.rotation_weight};
-      data_.constraints.push_back(Constraint{
-          constraint.submap_id, constraint.node_id, pose, constraint.tag});
+      //
+      // if the constraint is already present, nuke the old one and replace with
+      // a new constraint.  I don't see how it makes sense to have multiple
+      // constraints between a given node and submap.
+      // This is principle of least surprise.  If I expect a unique constraint
+      // between node and submap, then it is more surprising to have
+      // duplicated constraints when I explicitly tell the constraint builder
+      // to take my constraints.  It is less surprising for the old constraints
+      // to be overwritten.
+      //
+      auto foundConstraint =
+          std::find_if(data_.constraints.begin(), data_.constraints.end(),
+                  [&](const auto &datum){
+                    return datum.submap_id == constraint.submap_id
+                        and datum.node_id == constraint.node_id
+                        and datum.tag == constraint.tag;});
+      if(foundConstraint == data_.constraints.end())
+      {
+          data_.constraints.push_back(Constraint{
+              constraint.submap_id, constraint.node_id, pose, constraint.tag});
+      }
+      else
+      {
+          *foundConstraint = Constraint{constraint.submap_id, constraint.node_id, pose, constraint.tag};
+      }
     }
     LOG(INFO) << "Loaded " << constraints.size() << " constraints.";
     return WorkItem::Result::kDoNotRunOptimization;
