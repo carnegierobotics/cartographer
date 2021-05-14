@@ -123,6 +123,21 @@ class ConstraintBuilder2D {
                                 const NodeId& node_id,
                                 const TrajectoryNode::Data* const constant_data,
                                 std::unique_ptr<Constraint>* constraint);
+  /**
+   * Try to find a local constraint.
+   * On success, the constraint pointer is built.  On failure,
+   * it's null.
+   * @param[in] submap_id           submap id of submap used ofr branch and bound
+   * @param[in] submap              submap grid used for branch and bound
+   * @param[in] constraint_data     pose and other goodies of the node.
+   * @param[in] initial_pose        initial pose transform submap j <- node i
+   * @param[out] constraint         the output constraint
+   */
+  void MaybeFindLocalConstraint(const SubmapId& submap_id, const Submap2D* submap,
+                                const NodeId& node_id,
+                                const TrajectoryNode::Data* const constant_data,
+                                const transform::Rigid2d &initial_pose,
+                                std::unique_ptr<Constraint>* constraint);
 
  private:
   struct SubmapScanMatcher {

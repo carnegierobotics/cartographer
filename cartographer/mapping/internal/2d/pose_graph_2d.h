@@ -166,12 +166,23 @@ class PoseGraph2D : public PoseGraph {
 
   /**
    * Tries to compute a constraint between node and submap.
-   * @param[in] node_id
-   * @param[in] submap_id
-   * @param[out] constraint
+   * @param[in]     node_id
+   * @param[in]     submap_id
+   * @param[out]    constraint
    * @return                true if successful, false if unsuccessful
    */
   bool MaybeComputeConstraint(const NodeId& node_id, const SubmapId& submap_id, Constraint &constraint);
+
+  /**
+   * Tries to compute a constraint between node and submap giving an initial
+   * relative transform.
+   * @param[in]     node_id
+   * @param[in]     submap_id
+   * @param[in]     initial_relative_pose
+   * @param[out]    constraint
+   * @return                    true if successful, false if unsuccessful
+   */
+  bool MaybeComputeConstraint(const NodeId& node_id, const SubmapId& submap_id, const transform::Rigid2d &initial_relative_pose, Constraint &constraint);
 
   /**
    * Is submap finished?

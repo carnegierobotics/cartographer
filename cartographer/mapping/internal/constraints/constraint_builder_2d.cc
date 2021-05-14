@@ -186,6 +186,43 @@ void ConstraintBuilder2D::MaybeFindGlobalConstraint(
                     constraint);
 }
 
+void ConstraintBuilder2D::MaybeFindLocalConstraint(
+    const SubmapId& submap_id, const Submap2D* submap,
+    const NodeId& node_id,
+    const TrajectoryNode::Data* const constant_data,
+    const transform::Rigid2d &initial_relative_pose,
+    std::unique_ptr<Constraint>* constraint)
+{
+  // 
+  // get cached scanmatcher, or build and cache scanmatcher.
+  //
+
+  SubmapScanMatcher* submap_scan_matcher;
+  if (submap_scan_matchers_.count(submap_id) != 0) {
+      submap_scan_matcher = &submap_scan_matchers_.at(submap_id);
+  }
+  else
+  {
+      submap_scan_matcher = &submap_scan_matchers_[submap_id];
+      auto& scan_matcher_options = options_.fast_correlative_scan_matcher_options();
+      submap_scan_matcher->grid = submap->grid();
+      submap_scan_matcher->fast_correlative_scan_matcher =
+            absl::make_unique<scan_matching::FastCorrelativeScanMatcher2D>(
+                *(submap_scan_matcher->grid), scan_matcher_options);
+  }
+
+  auto match_full_submap = false;
+
+  ComputeConstraint(submap_id,
+                    submap,
+                    node_id,
+                    match_full_submap,
+                    constant_data,
+                    initial_relative_pose,
+                    *submap_scan_matcher,
+                    constraint);
+}
+
 
 void ConstraintBuilder2D::NotifyEndOfNode() {
   absl::MutexLock locker(&mutex_);

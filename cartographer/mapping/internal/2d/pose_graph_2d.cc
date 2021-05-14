@@ -1121,6 +1121,25 @@ bool PoseGraph2D::MaybeComputeConstraint(const NodeId& node_id, const SubmapId& 
   return true;
 }
 
+bool PoseGraph2D::MaybeComputeConstraint(const NodeId& node_id, const SubmapId& submap_id, const transform::Rigid2d &initial_relative_pose, Constraint &constraint)
+{
+  auto submap = static_cast<const Submap2D*>(
+    data_.submap_data.at(submap_id).submap.get());
+  auto constant_data = data_.trajectory_nodes.at(node_id).constant_data.get();
+  std::unique_ptr<Constraint> maybeConstraint;
+  //auto zbar_ij_2d = Project2D(initial_relative_pose);
+  constraint_builder_.MaybeFindLocalConstraint(submap_id, submap,
+                            node_id,
+                            constant_data,
+                            initial_relative_pose,
+                            &maybeConstraint);
+
+  if(maybeConstraint == nullptr)
+      return false;
+  constraint = *maybeConstraint;
+  return true;
+}
+
 bool PoseGraph2D::IsSubmapFinished(const SubmapId& submap_id)
 {
   for (const auto& submap_id_data : data_.submap_data) {
