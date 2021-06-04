@@ -794,8 +794,31 @@ void PoseGraph2D::AddSerializedConstraints(
                   data_.trajectory_nodes.at(constraint.node_id)
                       .constant_data->gravity_alignment.inverse()),
           constraint.pose.translation_weight, constraint.pose.rotation_weight};
-      data_.constraints.push_back(Constraint{
-          constraint.submap_id, constraint.node_id, pose, constraint.tag});
+      //
+      // if the constraint is already present, nuke the old one and replace with
+      // a new constraint.  I don't see how it makes sense to have multiple
+      // constraints between a given node and submap.
+      // This is principle of least surprise.  If I expect a unique constraint
+      // between node and submap, then it is more surprising to have
+      // duplicated constraints when I explicitly tell the constraint builder
+      // to take my constraints.  It is less surprising for the old constraints
+      // to be overwritten.
+      //
+      auto foundConstraint =
+          std::find_if(data_.constraints.begin(), data_.constraints.end(),
+                  [&](const auto &datum){
+                    return datum.submap_id == constraint.submap_id
+                        and datum.node_id == constraint.node_id
+                        and datum.tag == constraint.tag;});
+      if(foundConstraint == data_.constraints.end())
+      {
+          data_.constraints.push_back(Constraint{
+              constraint.submap_id, constraint.node_id, pose, constraint.tag});
+      }
+      else
+      {
+          *foundConstraint = Constraint{constraint.submap_id, constraint.node_id, pose, constraint.tag};
+      }
     }
     LOG(INFO) << "Loaded " << constraints.size() << " constraints.";
     return WorkItem::Result::kDoNotRunOptimization;
@@ -1079,6 +1102,63 @@ PoseGraph2D::GetAllSubmapPoses() const {
                               submap_data.pose});
   }
   return submap_poses;
+}
+
+bool PoseGraph2D::MaybeComputeConstraint(const NodeId& node_id, const SubmapId& submap_id, Constraint &constraint)
+{
+  auto submap = static_cast<const Submap2D*>(
+    data_.submap_data.at(submap_id).submap.get());
+  auto constant_data = data_.trajectory_nodes.at(node_id).constant_data.get();
+  std::unique_ptr<Constraint> maybeConstraint;
+  constraint_builder_.MaybeFindGlobalConstraint(submap_id, submap,
+                            node_id,
+                            constant_data,
+                            &maybeConstraint);
+
+  if(maybeConstraint == nullptr)
+      return false;
+  constraint = *maybeConstraint;
+  return true;
+}
+
+bool PoseGraph2D::MaybeComputeConstraint(const NodeId& node_id, const SubmapId& submap_id, const transform::Rigid2d &initial_relative_pose, Constraint &constraint)
+{
+  auto submap = static_cast<const Submap2D*>(
+    data_.submap_data.at(submap_id).submap.get());
+  auto constant_data = data_.trajectory_nodes.at(node_id).constant_data.get();
+  std::unique_ptr<Constraint> maybeConstraint;
+  constraint_builder_.MaybeFindLocalConstraint(submap_id, submap,
+                            node_id,
+                            constant_data,
+                            initial_relative_pose,
+                            &maybeConstraint);
+
+  if(maybeConstraint == nullptr)
+      return false;
+  constraint = *maybeConstraint;
+  return true;
+}
+
+bool PoseGraph2D::IsSubmapFinished(const SubmapId& submap_id)
+{
+  for (const auto& submap_id_data : data_.submap_data) {
+      if(submap_id_data.id == submap_id)
+      {
+          return submap_id_data.data.state == SubmapState::kFinished;
+      }
+  }
+  return false;
+}
+
+std::set<NodeId> PoseGraph2D::GetNodeIdsInSubmap(const SubmapId& submap_id)
+{
+  for (const auto& submap_id_data : data_.submap_data) {
+      if(submap_id_data.id == submap_id)
+      {
+          return submap_id_data.data.node_ids;
+      }
+  }
+  return {};
 }
 
 transform::Rigid3d PoseGraph2D::ComputeLocalToGlobalTransform(
