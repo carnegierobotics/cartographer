@@ -1104,63 +1104,6 @@ PoseGraph2D::GetAllSubmapPoses() const {
   return submap_poses;
 }
 
-bool PoseGraph2D::MaybeComputeConstraint(const NodeId& node_id, const SubmapId& submap_id, Constraint &constraint)
-{
-  auto submap = static_cast<const Submap2D*>(
-    data_.submap_data.at(submap_id).submap.get());
-  auto constant_data = data_.trajectory_nodes.at(node_id).constant_data.get();
-  std::unique_ptr<Constraint> maybeConstraint;
-  constraint_builder_.MaybeFindGlobalConstraint(submap_id, submap,
-                            node_id,
-                            constant_data,
-                            &maybeConstraint);
-
-  if(maybeConstraint == nullptr)
-      return false;
-  constraint = *maybeConstraint;
-  return true;
-}
-
-bool PoseGraph2D::MaybeComputeConstraint(const NodeId& node_id, const SubmapId& submap_id, const transform::Rigid2d &initial_relative_pose, Constraint &constraint)
-{
-  auto submap = static_cast<const Submap2D*>(
-    data_.submap_data.at(submap_id).submap.get());
-  auto constant_data = data_.trajectory_nodes.at(node_id).constant_data.get();
-  std::unique_ptr<Constraint> maybeConstraint;
-  constraint_builder_.MaybeFindLocalConstraint(submap_id, submap,
-                            node_id,
-                            constant_data,
-                            initial_relative_pose,
-                            &maybeConstraint);
-
-  if(maybeConstraint == nullptr)
-      return false;
-  constraint = *maybeConstraint;
-  return true;
-}
-
-bool PoseGraph2D::IsSubmapFinished(const SubmapId& submap_id)
-{
-  for (const auto& submap_id_data : data_.submap_data) {
-      if(submap_id_data.id == submap_id)
-      {
-          return submap_id_data.data.state == SubmapState::kFinished;
-      }
-  }
-  return false;
-}
-
-std::set<NodeId> PoseGraph2D::GetNodeIdsInSubmap(const SubmapId& submap_id)
-{
-  for (const auto& submap_id_data : data_.submap_data) {
-      if(submap_id_data.id == submap_id)
-      {
-          return submap_id_data.data.node_ids;
-      }
-  }
-  return {};
-}
-
 transform::Rigid3d PoseGraph2D::ComputeLocalToGlobalTransform(
     const MapById<SubmapId, optimization::SubmapSpec2D>& global_submap_poses,
     const int trajectory_id) const {
